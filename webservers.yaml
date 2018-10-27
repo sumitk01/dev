@@ -1,0 +1,30 @@
+---
+- hosts: webservers 
+  tasks:
+  - name: installation in progress ......... please wait.
+    yum:
+      name: "{{ item }}"
+      state: latest
+    loop:
+       - httpd
+       - mariadb-server
+    register: installoutput
+  - debug: 
+    var: installoutput
+  - name: example copying file with owner and permissions
+    copy:
+      src: /home/ec2-user/environment/dev/index.html
+      dest: /var/www/html
+  - name: Start service httpd, if not started
+    service:
+      name: "{{ item }}"
+      state: restarted
+      enabled: yes
+    loop:
+       - httpd
+       - mariadb
+  - name: installation of telnet
+    yum:
+      name: telnet
+      state: latest
+

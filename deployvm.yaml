@@ -1,0 +1,52 @@
+---
+- hosts: localhost
+  vars:
+     sgname: webinstsg
+     kpname: webkey
+     vmname: webservers
+  tasks:
+  - name: example using security group rule descriptions
+    ec2_group:
+       aws_access_key: "{{ myaccesskey }}"
+       aws_secret_key: "{{ mysecretkey }}"
+       name: "{{ sgname }}"
+       description: sg with rule descriptions
+       vpc_id: "{{ vpcid }}"
+       region: "{{ region }}"
+       rules:
+         - proto: tcp
+           ports:
+             - 80
+             - 22
+           cidr_ip: 0.0.0.0/0
+           rule_desc: allow all on port 80
+    register: webinstsg_output
+  - debug:
+       var: webinstsg_output
+  - name: Create VMs
+    ec2:
+      aws_access_key: "{{ myaccesskey }}"
+      aws_secret_key: "{{ mysecretkey }}"
+      region: "{{ region }}"
+      key_name: "{{ kpname }}"
+      group_id: "{{ webinstsg_output.group_id }}"
+      instance_type: "{{ instancetype }}"
+      image: "{{ myami }}"
+      vpc_subnet_id: "{{ subnetid }}"
+      assign_public_ip: yes
+      instance_tags:
+        Name: "{{ vmname }}"
+      count_tag:
+        Name: " {{ vmname }}"
+      exact_count: 1
+      wait: yes
+      wait_timeout: 120
+    register: webinstsg_output
+  - debug:
+      var: webinstsg_output
+  - name: wait 300 seconds 
+    wait_for:
+      port: 22
+      host: "{{ webinstsg_output.tagged_instances[0].dns_name }}"
+      search_regex: OpenSSH
+      delay: 10
